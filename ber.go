@@ -160,7 +160,7 @@ func readObject(ber []byte, offset int) (asn1Object, int, error) {
 	}
 	// read length
 	if offset >= len(ber) {
-		return nil, 0, errors.New("end of ber data reached")
+		return nil, 0, errors.New("ber2der: end of ber data reached")
 	}
 	var length int
 	l := ber[offset]
@@ -273,6 +273,10 @@ func readTag(data []byte) ([]byte, int, bool, []byte, error) {
 		debugprint("--> Primitive\n")
 	} else {
 		debugprint("--> Constructed\n")
+	}
+	// computing length
+	if offset >= len(data) {
+		return nil, 0, adjustLength, nil, errors.New("ber2der: end of ber data reached")
 	}
 	var length int
 	l := data[offset]

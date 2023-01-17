@@ -159,6 +159,9 @@ func readObject(ber []byte, offset int) (asn1Object, int, error) {
 		debugprint("--> Constructed\n")
 	}
 	// read length
+	if offset > len(ber) {
+		return nil, 0, errors.New("end of ber data reached")
+	}
 	var length int
 	l := ber[offset]
 	offset++

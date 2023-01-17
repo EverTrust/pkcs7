@@ -3,7 +3,6 @@ package pkcs7
 import (
 	"bytes"
 	"errors"
-	"fmt"
 )
 
 // var encodeIndent = 0
@@ -150,7 +149,7 @@ func readObject(ber []byte, offset int) (asn1Object, int, error) {
 		tag = tag*128 + ber[offset] - 0x80
 		offset++
 	}
-	// fmt.Printf("ASN1 TAG: %d %s\n", tag, objType(int(big.NewInt(0).SetBytes([]byte{tag}).Int64())))
+	// fmt.Printf("ASN1 TAG: %d\n", tag)
 	tagEnd := offset
 
 	kind := b & 0x20
@@ -190,7 +189,7 @@ func readObject(ber []byte, offset int) (asn1Object, int, error) {
 
 	contentEnd := offset + length
 	if contentEnd > len(ber) {
-		return nil, 0, errors.New(fmt.Sprintf("ber2der: BER tag length is more than available data. contentEnd: %d len_ber: %d", contentEnd, len(ber)))
+		return nil, 0, errors.New("ber2der: BER tag length is more than available data.")
 	}
 	var obj asn1Object
 	if indefinite && kind == 0 {

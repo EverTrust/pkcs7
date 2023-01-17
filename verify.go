@@ -210,8 +210,21 @@ func parseSignedData(data []byte) (*PKCS7, error) {
 	// Compound octet string
 	if compound.IsCompound {
 		if compound.Tag == 4 {
-			if _, err = asn1.Unmarshal(compound.Bytes, &content); err != nil {
-				return nil, err
+			header, _, _, _, err := readTag(compound.Bytes)
+			// Might be redundant, to be checked
+			if (header[0] & 0x1F) == 0x04 {
+				if err != nil {
+					return nil, err
+				}
+				// not using asn1 unmarshal, because it's not supporting BER octet-string splitting
+				content, err = unMarshalBer(compound.Bytes[len(header):])
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				if _, err = asn1.Unmarshal(compound.Bytes, &content); err != nil {
+					return nil, err
+				}
 			}
 		} else {
 			content = compound.Bytes

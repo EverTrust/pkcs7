@@ -313,7 +313,8 @@ func readTag(data []byte) ([]byte, int, bool, []byte, error) {
 			length = index - len(header)
 			adjustLength = true
 			debugprint("=> Computing new length based on content: %d\n", length)
-		} else {
+		}
+		if !adjustLength {
 			nullBytes := [4]byte{0, 0, 0, 0}
 			dataArr := nullBytes
 			copy(dataArr[:], data[index:index+4])

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/big"
 )
 
 // var encodeIndent = 0
@@ -318,10 +319,24 @@ func readTag(data []byte) ([]byte, int, bool, []byte, error) {
 	return header, length, adjustLength, rest, nil
 }
 
+func buildHeader(b byte, length int) []byte {
+	res := []byte{b}
+	s := big.NewInt(int64(length))
+	if length < 128 {
+		res = append(res, s.Bytes()...)
+	} else {
+		nob := big.NewInt(int64(len(s.Bytes()) + 128))
+		res = append(res, nob.Bytes()...)
+		res = append(res, s.Bytes()...)
+	}
+	return res
+}
+
 func unMarshalBer(data []byte) ([]byte, error) {
 	res := []byte{}
 	berTagExt := false
-	berTagExtHeader := false
+	berOS := []byte{}
+	berOSLength := 0
 	for len(data) > 0 {
 		header, length, adjustLength, rest, err := readTag(data)
 		if err != nil {
@@ -330,28 +345,24 @@ func unMarshalBer(data []byte) ([]byte, error) {
 		if !berTagExt {
 			debugprint("=> BerTagExt false, adding header\n")
 			res = append(res, header...)
-		} else if berTagExtHeader {
-			debugprint("=> BerTagExtHeader true, adding header\n")
-			res = append(res, header...)
-			berTagExtHeader = false
-			if !adjustLength {
-				debugprint("=> We are within a BER EXT tag, but data length was enough after all")
-				berTagExt = false
-			}
 		} else {
 			debugprint("=> BerTagExt true, NOT adding header\n")
-			//if !adjustLength {
-			//	debugprint("=> BerTagExt true and length was not adjusted, so now we have consumed all data from BER OS chunks")
-			berTagExt = false
-			//}
+			berOS = append(berOS, data[len(header):len(header)+length]...)
+			berOSLength += length
+			if !adjustLength {
+				debugprint("=> BerTagExt true and length was not adjusted, so now we have consumed all data. Data length will be %d\n", berOSLength)
+				berTagExt = false
+				res = append(res, buildHeader(header[0], berOSLength)...)
+				berOS = []byte{}
+				berOSLength = 0
+			}
 		}
-		if length > 0 {
+		if length > 0 && !berTagExt {
 			dataToAdd := data[len(header) : len(header)+length]
 			res = append(res, dataToAdd...)
 		}
 		if header[0] == 0xa0 && header[1] == 0x80 {
 			berTagExt = true
-			berTagExtHeader = true
 		}
 		data = rest
 	}

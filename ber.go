@@ -339,7 +339,10 @@ func unMarshalBer(data []byte) ([]byte, error) {
 			}
 		} else {
 			debugprint("=> BerTagExt true, NOT adding header\n")
-			berTagExt = false
+			if !adjustLength {
+				debugprint("=> BerTagExt true and length was not adjusted, so now we have consumed all data from BER OS chunks")
+				berTagExt = false
+			}
 		}
 		if length > 0 {
 			dataToAdd := data[len(header) : len(header)+length]

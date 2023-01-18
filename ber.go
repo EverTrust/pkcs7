@@ -3,6 +3,7 @@ package pkcs7
 import (
 	"bytes"
 	"errors"
+	"fmt"
 )
 
 // var encodeIndent = 0
@@ -310,7 +311,7 @@ func readTag(data []byte) ([]byte, int, bool, []byte, error) {
 		if index < length && index > len(header) && index < len(data)-1 && data[index] == header[0] && data[index+1] == header[1] {
 			length = index - len(header)
 			adjustLength = true
-			debugprint("Computing new length based on content: %d\n", length)
+			debugprint("=> Computing new length based on content: %d\n", length)
 		}
 	}
 	rest := data[len(header)+length:]
@@ -358,5 +359,5 @@ func unMarshalBer(data []byte) ([]byte, error) {
 }
 
 func debugprint(format string, a ...interface{}) {
-	//fmt.Printf(format, a)
+	fmt.Printf(format, a)
 }

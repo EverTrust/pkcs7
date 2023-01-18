@@ -316,6 +316,7 @@ func readTag(data []byte) ([]byte, int, bool, []byte, error) {
 		}
 	}
 	rest := data[len(header)+length:]
+	debugprint("===> Rest: %d\n", rest)
 	return header, length, adjustLength, rest, nil
 }
 

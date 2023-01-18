@@ -351,8 +351,9 @@ func unMarshalBer(data []byte) ([]byte, error) {
 			berOSLength += length
 			if !adjustLength {
 				debugprint("=> BerTagExt true and length was not adjusted, so now we have consumed all data. Data length will be %d\n", berOSLength)
-				berTagExt = false
 				res = append(res, buildHeader(header[0], berOSLength)...)
+				res = append(res, berOS...)
+				berTagExt = false
 				berOS = []byte{}
 				berOSLength = 0
 			}

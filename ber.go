@@ -313,13 +313,14 @@ func readTag(data []byte) ([]byte, int, bool, []byte, error) {
 			length = index - len(header)
 			adjustLength = true
 			debugprint("=> Computing new length based on content: %d\n", length)
-		}
-		nullBytes := [4]byte{0, 0, 0, 0}
-		dataArr := nullBytes
-		copy(dataArr[:], data[index:index+4])
-		if index < len(data)-4 && dataArr == nullBytes {
-			length = index + 4 - len(header)
-			debugprint("=> Computing new length based on stop bits: %d\n", length)
+		} else {
+			nullBytes := [4]byte{0, 0, 0, 0}
+			dataArr := nullBytes
+			copy(dataArr[:], data[index:index+4])
+			if index < len(data)-4 && dataArr == nullBytes {
+				length = index + 4 - len(header)
+				debugprint("=> Computing new length based on stop bits: %d\n", length)
+			}
 		}
 	}
 	rest := data[len(header)+length:]

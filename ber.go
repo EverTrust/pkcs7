@@ -250,7 +250,13 @@ func isIndefiniteTermination(ber []byte, offset int) (bool, error) {
 	return bytes.Index(ber[offset:], []byte{0x0, 0x0}) == 0, nil
 }
 
-func readTag(data []byte) ([]byte, int, bool, []byte, error) {
+func readTag(data []byte, berExtTag bool) ([]byte, int, bool, []byte, error) {
+	nullBytes := [2]byte{0, 0}
+	headerArr := nullBytes
+	copy(headerArr[:], data[:2])
+	if headerArr == nullBytes {
+		return data[:2], 0, false, data[2:], nil
+	}
 	offset := 0
 	adjustLength := false
 	header := []byte{data[offset]}
@@ -308,35 +314,48 @@ func readTag(data []byte) ([]byte, int, bool, []byte, error) {
 	} else {
 		length = (int)(l)
 	}
-	for index := range data {
-		if index < length && index > len(header) && index < len(data)-1 && data[index] == header[0] && data[index+1] == header[1] {
-			length = index - len(header)
-			adjustLength = true
-			debugprint("=> Computing new length based on content: %d\n", length)
-		}
-		if !adjustLength {
-			nullBytes := [4]byte{0, 0, 0, 0}
-			if index < len(data)-4 {
-				dataArr := nullBytes
-				copy(dataArr[:], data[index:index+4])
-				if dataArr == nullBytes {
-					length = index + 5 - len(header)
-					debugprint("=> Computing new length based on stop octets: %d\n", length)
+	beginRest := len(header) + length
+	if berExtTag && tag == 0x04 {
+		for index := range data {
+			if index < length && index > len(header) && index < len(data)-1 && data[index] == header[0] && data[index+1] == header[1] {
+				length = index - len(header)
+				adjustLength = true
+				debugprint("=> Computing new length based on content: %d\n", length)
+				beginRest = len(header) + length
+				break
+			}
+			if !adjustLength {
+				if index < len(data)-4 {
+					dataArr := nullBytes
+					copy(dataArr[:], data[index:index+4])
+					if dataArr == nullBytes {
+						length = index - len(header)
+						debugprint("=> Computing new length based on stop octets: %d\n", length)
+						beginRest = len(header) + length
+						break
+					}
 				}
 			}
 		}
 	}
-	rest := data[len(header)+length:]
-	debugprint("===> Rest: %x\n", rest)
+	rest := data[beginRest:]
+	debugprint("===> Header: %x\n", header)
+	debugprint("===> Length: %d\n", length)
+	//debugprint("===> Rest: %x\n", rest)
 	return header, length, adjustLength, rest, nil
 }
 
-func buildHeader(b byte, length int) []byte {
+func buildHeader(b byte, l byte, length int) []byte {
 	res := []byte{b}
 	s := big.NewInt(int64(length))
-	if length < 128 {
+	if l == 0x80 {
+		// indefinite length, copy as is
+		res = append(res, l)
+	} else if length < 128 {
+		// short length, short format
 		res = append(res, s.Bytes()...)
 	} else {
+		// long length, long format
 		nob := big.NewInt(int64(len(s.Bytes()) + 128))
 		res = append(res, nob.Bytes()...)
 		res = append(res, s.Bytes()...)
@@ -350,31 +369,34 @@ func unMarshalBer(data []byte) ([]byte, error) {
 	berOS := []byte{}
 	berOSLength := 0
 	for len(data) > 0 {
-		header, length, adjustLength, rest, err := readTag(data)
+		header, length, adjustLength, rest, err := readTag(data, berTagExt)
 		if err != nil {
 			return nil, err
 		}
 		if !berTagExt {
 			debugprint("=> BerTagExt false, adding header\n")
 			res = append(res, header...)
+			if length > 0 {
+				dataToAdd := data[len(header) : len(header)+length]
+				res = append(res, dataToAdd...)
+			}
 		} else {
 			debugprint("=> BerTagExt true, NOT adding header\n")
 			berOS = append(berOS, data[len(header):len(header)+length]...)
 			berOSLength += length
 			if !adjustLength {
 				debugprint("=> BerTagExt true and length was not adjusted, so now we have consumed all data. Data length will be %d\n", berOSLength)
-				res = append(res, buildHeader(header[0], berOSLength)...)
+				res = append(res, buildHeader(header[0], header[1], berOSLength)...)
 				res = append(res, berOS...)
+				//debugprint("berOS content: %x%x\n", buildHeader(header[0], header[1], berOSLength), berOS)
 				berTagExt = false
 				berOS = []byte{}
 				berOSLength = 0
 			}
 		}
-		if length > 0 && !berTagExt {
-			dataToAdd := data[len(header) : len(header)+length]
-			res = append(res, dataToAdd...)
-		}
+		//debugprint("Header: %x\n", header)
 		if header[0] == 0xa0 && header[1] == 0x80 {
+			debugprint("Setting berTagExt to true\n")
 			berTagExt = true
 		}
 		data = rest

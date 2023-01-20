@@ -210,7 +210,7 @@ func parseSignedData(data []byte) (*PKCS7, error) {
 	// Compound octet string
 	if compound.IsCompound {
 		if compound.Tag == 4 {
-			header, _, _, _, err := readTag(compound.Bytes, false)
+			header, _, _, err := parseHeader(compound.Bytes)
 			// Might be redundant, to be checked
 			if (header[0] & 0x1F) == 0x04 {
 				if err != nil {

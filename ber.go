@@ -307,45 +307,33 @@ func parseHeader(data []byte) ([]byte, byte, int, error) {
 	} else {
 		length = (int)(l)
 	}
+	if length > len(data) {
+		return nil, tag, 0, errors.New("ber2der: BER tag length longer than available data")
+	}
 	return header, tag, length, nil
 }
 
-func readTag(data []byte, berExtTag bool) ([]byte, int, bool, bool, []byte, error) {
+func readTag(data []byte, berExtTag bool) ([]byte, int, bool, []byte, error) {
 	nullBytes := [2]byte{0, 0}
 	headerArr := nullBytes
 	copy(headerArr[:], data[:2])
 	if headerArr == nullBytes {
-		return data[:2], 0, false, false, data[2:], nil
+		return data[:2], 0, false, data[2:], nil
 	}
 	header, tag, length, err := parseHeader(data)
 	if err != nil {
-		return nil, 0, false, false, nil, err
+		return nil, 0, false, nil, err
 	}
 	adjustLength := false
-	otherTag := false
-	if berExtTag && tag == 0x04 {
+	if berExtTag && tag == 0x04 && length == 1000 {
 		for index := range data {
-			if index < length && index > len(header) && index < len(data)-1 && data[index] == header[0] {
+			if index < length && index > len(header) && index < len(data)-1 && data[index] == header[0] && data[index+1] == header[1] {
 				_, _, _, err = parseHeader(data[index:])
 				if err == nil {
 					length = index - len(header)
 					adjustLength = true
 					debugprint("=> Computing new length based on content: %d\n", length)
-					if data[index+1] != header[1] {
-						otherTag = true
-					}
 					break
-				}
-			}
-			if !adjustLength {
-				if index < len(data)-4 {
-					dataArr := nullBytes
-					copy(dataArr[:], data[index:index+4])
-					if dataArr == nullBytes {
-						length = index - len(header)
-						debugprint("=> Computing new length based on stop octets: %d\n", length)
-						break
-					}
 				}
 			}
 		}
@@ -354,7 +342,7 @@ func readTag(data []byte, berExtTag bool) ([]byte, int, bool, bool, []byte, erro
 	debugprint("===> Header: %x\n", header)
 	debugprint("===> Length: %d\n", length)
 	//debugprint("===> Rest: %x\n", rest)
-	return header, length, adjustLength, otherTag, rest, nil
+	return header, length, adjustLength, rest, nil
 }
 
 func buildHeader(b byte, l byte, length int) []byte {
@@ -380,9 +368,10 @@ func unMarshalBer(data []byte) ([]byte, error) {
 	res := []byte{}
 	berTagExt := false
 	berOS := []byte{}
-	berOSLength := 0
+	// seems bouncy castle is using "1000" when it doesn't know which actual length to encode...
+	berOSLength := 1000
 	for len(data) > 0 {
-		header, length, adjustLength, otherTag, rest, err := readTag(data, berTagExt)
+		header, length, adjustLength, rest, err := readTag(data, berTagExt)
 		if err != nil {
 			return nil, err
 		}
@@ -396,8 +385,8 @@ func unMarshalBer(data []byte) ([]byte, error) {
 		} else {
 			debugprint("=> BerTagExt true, NOT adding header\n")
 			berOS = append(berOS, data[len(header):len(header)+length]...)
-			berOSLength += length
-			if !adjustLength || otherTag {
+			//berOSLength += length
+			if !adjustLength {
 				debugprint("=> BerTagExt true and length was not adjusted, so now we have consumed all data. Data length will be %d\n", berOSLength)
 				res = append(res, buildHeader(header[0], header[1], berOSLength)...)
 				res = append(res, berOS...)
@@ -407,8 +396,8 @@ func unMarshalBer(data []byte) ([]byte, error) {
 				berOSLength = 0
 			}
 		}
-		debugprint("Header: %x\n", header)
-		if header[0] == 0xa0 && header[1] == 0x80 {
+		//debugprint("Header: %x\n", header)
+		if header[0] == 0xa0 && header[1] == 0x80 && len(rest) > 2 && rest[0] == 0x04 && rest[1] == 0x82 {
 			debugprint("Setting berTagExt to true\n")
 			berTagExt = true
 		}

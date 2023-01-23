@@ -3,7 +3,6 @@ package pkcs7
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"math/big"
 )
 
@@ -411,5 +410,5 @@ func unMarshalBer(data []byte) ([]byte, error) {
 }
 
 func debugprint(format string, a ...interface{}) {
-	fmt.Printf(format, a...)
+	//	fmt.Printf(format, a...)
 }

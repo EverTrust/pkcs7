@@ -369,7 +369,8 @@ func unMarshalBer(data []byte) ([]byte, error) {
 	berTagExt := false
 	berOS := []byte{}
 	// seems bouncy castle is using "1000" when it doesn't know which actual length to encode...
-	berOSLength := 1000
+	BerOSMaxLength := 1000
+	berOSLength := 0
 	for len(data) > 0 {
 		header, length, adjustLength, rest, err := readTag(data, berTagExt)
 		if err != nil {
@@ -385,13 +386,16 @@ func unMarshalBer(data []byte) ([]byte, error) {
 		} else {
 			debugprint("=> BerTagExt true, NOT adding header\n")
 			berOS = append(berOS, data[len(header):len(header)+length]...)
-			//berOSLength += length
-			if !adjustLength {
+			berOSLength += length
+			debugprint("====> BerOS length: %d\n", berOSLength)
+			if !adjustLength || berOSLength == BerOSMaxLength {
 				debugprint("=> BerTagExt true and length was not adjusted, so now we have consumed all data. Data length will be %d\n", berOSLength)
-				res = append(res, buildHeader(header[0], header[1], berOSLength)...)
+				res = append(res, buildHeader(header[0], header[1], BerOSMaxLength)...)
 				res = append(res, berOS...)
 				//debugprint("berOS content: %x%x\n", buildHeader(header[0], header[1], berOSLength), berOS)
-				berTagExt = false
+				if !adjustLength {
+					berTagExt = false
+				}
 				berOS = []byte{}
 				berOSLength = 0
 			}

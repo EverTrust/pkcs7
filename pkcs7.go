@@ -118,7 +118,7 @@ func getDigestOIDForSignatureAlgorithm(digestAlg x509.SignatureAlgorithm) (asn1.
 // the OID of a digest algorithm to return the appropriate signerInfo.DigestEncryptionAlgorithm
 func getOIDForEncryptionAlgorithm(pkey crypto.PrivateKey, OIDDigestAlg asn1.ObjectIdentifier) (asn1.ObjectIdentifier, error) {
 	switch pkey.(type) {
-	case *rsa.PrivateKey:
+	default:
 		switch {
 		default:
 			return OIDEncryptionAlgorithmRSA, nil

@@ -22,11 +22,11 @@ var ErrNotEncryptedContent = errors.New("pkcs7: content data is a decryptable da
 
 // Decrypt decrypts encrypted content info for recipient cert and private key
 func (p7 *PKCS7) Decrypt(cert *x509.Certificate, pkey crypto.PrivateKey) ([]byte, error) {
-	data, ok := p7.raw.(envelopedData)
+	data, ok := p7.Raw.(EnvelopedData)
 	if !ok {
 		return nil, ErrNotEncryptedContent
 	}
-	recipient := selectRecipientForCertificate(data.RecipientInfos, cert)
+	recipient := SelectRecipientForCertificate(data.RecipientInfos, cert)
 	if recipient.EncryptedKey == nil {
 		return nil, errors.New("pkcs7: no enveloped recipient for provided certificate")
 	}
@@ -37,7 +37,7 @@ func (p7 *PKCS7) Decrypt(cert *x509.Certificate, pkey crypto.PrivateKey) ([]byte
 		if err != nil {
 			return nil, err
 		}
-		return data.EncryptedContentInfo.decrypt(contentKey)
+		return data.EncryptedContentInfo.Decrypt(contentKey)
 	}
 	return nil, ErrUnsupportedAlgorithm
 }
@@ -45,14 +45,14 @@ func (p7 *PKCS7) Decrypt(cert *x509.Certificate, pkey crypto.PrivateKey) ([]byte
 // DecryptUsingPSK decrypts encrypted data using caller provided
 // pre-shared secret
 func (p7 *PKCS7) DecryptUsingPSK(key []byte) ([]byte, error) {
-	data, ok := p7.raw.(encryptedData)
+	data, ok := p7.Raw.(encryptedData)
 	if !ok {
 		return nil, ErrNotEncryptedContent
 	}
-	return data.EncryptedContentInfo.decrypt(key)
+	return data.EncryptedContentInfo.Decrypt(key)
 }
 
-func (eci encryptedContentInfo) decrypt(key []byte) ([]byte, error) {
+func (eci encryptedContentInfo) Decrypt(key []byte) ([]byte, error) {
 	alg := eci.ContentEncryptionAlgorithm.Algorithm
 	if !alg.Equal(OIDEncryptionAlgorithmDESCBC) &&
 		!alg.Equal(OIDEncryptionAlgorithmDESEDE3CBC) &&
@@ -167,7 +167,7 @@ func unpad(data []byte, blocklen int) ([]byte, error) {
 	return data[:len(data)-padlen], nil
 }
 
-func selectRecipientForCertificate(recipients []recipientInfo, cert *x509.Certificate) recipientInfo {
+func SelectRecipientForCertificate(recipients []recipientInfo, cert *x509.Certificate) recipientInfo {
 	for _, recp := range recipients {
 		if isCertMatchForIssuerAndSerial(cert, recp.IssuerAndSerialNumber) {
 			return recp

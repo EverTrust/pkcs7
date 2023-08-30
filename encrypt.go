@@ -14,7 +14,7 @@ import (
 	"fmt"
 )
 
-type envelopedData struct {
+type EnvelopedData struct {
 	Version              int
 	RecipientInfos       []recipientInfo `asn1:"set"`
 	EncryptedContentInfo encryptedContentInfo
@@ -256,7 +256,7 @@ func encryptAESCBC(content []byte, key []byte) ([]byte, *encryptedContentInfo, e
 // value is EncryptionAlgorithmDESCBC. To use a different algorithm, change the
 // value before calling Encrypt(). For example:
 //
-//     ContentEncryptionAlgorithm = EncryptionAlgorithmAES128GCM
+//	ContentEncryptionAlgorithm = EncryptionAlgorithmAES128GCM
 //
 // TODO(fullsailor): Add support for encrypting content with other algorithms
 func Encrypt(content []byte, recipients []*x509.Certificate) ([]byte, error) {
@@ -308,7 +308,7 @@ func Encrypt(content []byte, recipients []*x509.Certificate) ([]byte, error) {
 	}
 
 	// Prepare envelope content
-	envelope := envelopedData{
+	envelope := EnvelopedData{
 		EncryptedContentInfo: *eci,
 		Version:              0,
 		RecipientInfos:       recipientInfos,

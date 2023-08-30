@@ -6,6 +6,7 @@ import (
 	"crypto"
 	"crypto/dsa"
 	"crypto/ecdsa"
+
 	// "crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
@@ -23,7 +24,7 @@ type PKCS7 struct {
 	Certificates []*x509.Certificate
 	CRLs         []pkix.CertificateList
 	Signers      []signerInfo
-	raw          interface{}
+	Raw          interface{}
 }
 
 type contentInfo struct {
@@ -183,12 +184,12 @@ func Parse(data []byte) (p7 *PKCS7, err error) {
 }
 
 func parseEnvelopedData(data []byte) (*PKCS7, error) {
-	var ed envelopedData
+	var ed EnvelopedData
 	if _, err := asn1.Unmarshal(data, &ed); err != nil {
 		return nil, err
 	}
 	return &PKCS7{
-		raw: ed,
+		Raw: ed,
 	}, nil
 }
 
@@ -198,7 +199,7 @@ func parseEncryptedData(data []byte) (*PKCS7, error) {
 		return nil, err
 	}
 	return &PKCS7{
-		raw: ed,
+		Raw: ed,
 	}, nil
 }
 

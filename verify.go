@@ -217,7 +217,7 @@ func parseSignedData(data []byte) (*PKCS7, error) {
 					return nil, err
 				}
 				// not using asn1 unmarshal, because it's not supporting BER octet-string splitting
-				content, err = unMarshalBer(compound.Bytes[len(header):])
+				content, err = unMarshalBer(compound.Bytes)
 				if err != nil {
 					return nil, err
 				}

@@ -108,12 +108,12 @@ func lengthLength(i int) (numBytes int) {
 // added to 0x80. The length is encoded in big endian encoding follow after
 //
 // Examples:
-//  length | byte 1 | bytes n
-//  0      | 0x00   | -
-//  120    | 0x78   | -
-//  200    | 0x81   | 0xC8
-//  500    | 0x82   | 0x01 0xF4
 //
+//	length | byte 1 | bytes n
+//	0      | 0x00   | -
+//	120    | 0x78   | -
+//	200    | 0x81   | 0xC8
+//	500    | 0x82   | 0x01 0xF4
 func encodeLength(out *bytes.Buffer, length int) (err error) {
 	if length >= 128 {
 		l := lengthLength(length)
@@ -375,32 +375,22 @@ func unMarshalBer(data []byte) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		if !berTagExt {
-			debugprint("=> BerTagExt false, adding header\n")
-			res = append(res, header...)
-			if length > 0 {
-				dataToAdd := data[len(header) : len(header)+length]
-				res = append(res, dataToAdd...)
+		debugprint("=> BerTagExt true, NOT adding header\n")
+		berOS = append(berOS, data[len(header):len(header)+length]...)
+		berOSLength += length
+		debugprint("====> BerOS length: %d\n", berOSLength)
+		if !adjustLength || berOSLength == BerOSMaxLength {
+			debugprint("=> BerTagExt true and length was not adjusted, so now we have consumed all data. Data length will be %d\n", berOSLength)
+			res = append(res, berOS...)
+			//debugprint("berOS content: %x%x\n", buildHeader(header[0], header[1], berOSLength), berOS)
+			if !adjustLength {
+				berTagExt = false
 			}
-		} else {
-			debugprint("=> BerTagExt true, NOT adding header\n")
-			berOS = append(berOS, data[len(header):len(header)+length]...)
-			berOSLength += length
-			debugprint("====> BerOS length: %d\n", berOSLength)
-			if !adjustLength || berOSLength == BerOSMaxLength {
-				debugprint("=> BerTagExt true and length was not adjusted, so now we have consumed all data. Data length will be %d\n", berOSLength)
-				res = append(res, buildHeader(header[0], header[1], BerOSMaxLength)...)
-				res = append(res, berOS...)
-				//debugprint("berOS content: %x%x\n", buildHeader(header[0], header[1], berOSLength), berOS)
-				if !adjustLength {
-					berTagExt = false
-				}
-				berOS = []byte{}
-				berOSLength = 0
-			}
+			berOS = []byte{}
+			berOSLength = 0
 		}
 		//debugprint("Header: %x\n", header)
-		if header[0] == 0xa0 && header[1] == 0x80 && len(rest) > 2 && rest[0] == 0x04 && rest[1] == 0x82 {
+		if header[0] == 0xa0 && header[1] == 0x80 && len(rest) > 2 && rest[0] == 0x04 && (rest[1] == 0x82 || rest[1] == 0x81) {
 			debugprint("Setting berTagExt to true\n")
 			berTagExt = true
 		}

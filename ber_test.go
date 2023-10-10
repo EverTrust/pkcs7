@@ -53,7 +53,6 @@ func TestP7Parsing(t *testing.T) {
 	}
 	biggest, _ := base64.StdEncoding.DecodeString(biggestP7)
 	biggestP7, err := Parse(biggest)
-	fmt.Println(base64.StdEncoding.EncodeToString(smallestP7.Content))
 	if err != nil {
 		t.Errorf("Could not parse P7: %s", err.Error())
 	} else {

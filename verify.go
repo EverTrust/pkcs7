@@ -276,7 +276,9 @@ func (err *MessageDigestMismatchError) Error() string {
 }
 
 func getSignatureAlgorithm(digestEncryption, digest pkix.AlgorithmIdentifier) (x509.SignatureAlgorithm, error) {
-	if innerMap, found := DigestAlgorithmMap[digestEncryption.Algorithm.String()]; found {
+	if algo, found := ECDSAWithSHAxMap[digestEncryption.Algorithm.String()]; found {
+		return algo, nil
+	} else if innerMap, found := DigestAlgorithmMap[digestEncryption.Algorithm.String()]; found {
 		if algo, found := innerMap[digest.Algorithm.String()]; found {
 			return algo, nil
 		}

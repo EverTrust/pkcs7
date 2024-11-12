@@ -106,12 +106,14 @@ func dsaAlgorithmMap() map[string]x509.SignatureAlgorithm {
 	}
 }
 
-var DigestAlgorithmMap = map[string]map[string]x509.SignatureAlgorithm{
-	OIDDigestAlgorithmECDSASHA1.String():   {"": x509.ECDSAWithSHA1},
-	OIDDigestAlgorithmECDSASHA256.String(): {"": x509.ECDSAWithSHA256},
-	OIDDigestAlgorithmECDSASHA384.String(): {"": x509.ECDSAWithSHA384},
-	OIDDigestAlgorithmECDSASHA512.String(): {"": x509.ECDSAWithSHA512},
+var ECDSAWithSHAxMap = map[string]x509.SignatureAlgorithm{
+	OIDDigestAlgorithmECDSASHA1.String():   x509.ECDSAWithSHA1,
+	OIDDigestAlgorithmECDSASHA256.String(): x509.ECDSAWithSHA256,
+	OIDDigestAlgorithmECDSASHA384.String(): x509.ECDSAWithSHA384,
+	OIDDigestAlgorithmECDSASHA512.String(): x509.ECDSAWithSHA512,
+}
 
+var DigestAlgorithmMap = map[string]map[string]x509.SignatureAlgorithm{
 	OIDEncryptionAlgorithmRSA.String():       rsaAlgorithmMap(),
 	OIDEncryptionAlgorithmRSASHA1.String():   rsaAlgorithmMap(),
 	OIDEncryptionAlgorithmRSASHA256.String(): rsaAlgorithmMap(),

@@ -276,64 +276,14 @@ func (err *MessageDigestMismatchError) Error() string {
 }
 
 func getSignatureAlgorithm(digestEncryption, digest pkix.AlgorithmIdentifier) (x509.SignatureAlgorithm, error) {
-	switch {
-	case digestEncryption.Algorithm.Equal(OIDDigestAlgorithmECDSASHA1):
-		return x509.ECDSAWithSHA1, nil
-	case digestEncryption.Algorithm.Equal(OIDDigestAlgorithmECDSASHA256):
-		return x509.ECDSAWithSHA256, nil
-	case digestEncryption.Algorithm.Equal(OIDDigestAlgorithmECDSASHA384):
-		return x509.ECDSAWithSHA384, nil
-	case digestEncryption.Algorithm.Equal(OIDDigestAlgorithmECDSASHA512):
-		return x509.ECDSAWithSHA512, nil
-	case digestEncryption.Algorithm.Equal(OIDEncryptionAlgorithmRSA),
-		digestEncryption.Algorithm.Equal(OIDEncryptionAlgorithmRSASHA1),
-		digestEncryption.Algorithm.Equal(OIDEncryptionAlgorithmRSASHA256),
-		digestEncryption.Algorithm.Equal(OIDEncryptionAlgorithmRSASHA384),
-		digestEncryption.Algorithm.Equal(OIDEncryptionAlgorithmRSASHA512):
-		switch {
-		case digest.Algorithm.Equal(OIDDigestAlgorithmSHA1):
-			return x509.SHA1WithRSA, nil
-		case digest.Algorithm.Equal(OIDDigestAlgorithmSHA256):
-			return x509.SHA256WithRSA, nil
-		case digest.Algorithm.Equal(OIDDigestAlgorithmSHA384):
-			return x509.SHA384WithRSA, nil
-		case digest.Algorithm.Equal(OIDDigestAlgorithmSHA512):
-			return x509.SHA512WithRSA, nil
-		default:
-			return -1, fmt.Errorf("pkcs7: unsupported digest %q for encryption algorithm %q",
-				digest.Algorithm.String(), digestEncryption.Algorithm.String())
+	if innerMap, found := DigestAlgorithmMap[digestEncryption.Algorithm.String()]; found {
+		if algo, found := innerMap[digest.Algorithm.String()]; found {
+			return algo, nil
 		}
-	case digestEncryption.Algorithm.Equal(OIDDigestAlgorithmDSA),
-		digestEncryption.Algorithm.Equal(OIDDigestAlgorithmDSASHA1):
-		switch {
-		case digest.Algorithm.Equal(OIDDigestAlgorithmSHA1):
-			return x509.DSAWithSHA1, nil
-		case digest.Algorithm.Equal(OIDDigestAlgorithmSHA256):
-			return x509.DSAWithSHA256, nil
-		default:
-			return -1, fmt.Errorf("pkcs7: unsupported digest %q for encryption algorithm %q",
-				digest.Algorithm.String(), digestEncryption.Algorithm.String())
-		}
-	case digestEncryption.Algorithm.Equal(OIDEncryptionAlgorithmECDSAP256),
-		digestEncryption.Algorithm.Equal(OIDEncryptionAlgorithmECDSAP384),
-		digestEncryption.Algorithm.Equal(OIDEncryptionAlgorithmECDSAP521):
-		switch {
-		case digest.Algorithm.Equal(OIDDigestAlgorithmSHA1):
-			return x509.ECDSAWithSHA1, nil
-		case digest.Algorithm.Equal(OIDDigestAlgorithmSHA256):
-			return x509.ECDSAWithSHA256, nil
-		case digest.Algorithm.Equal(OIDDigestAlgorithmSHA384):
-			return x509.ECDSAWithSHA384, nil
-		case digest.Algorithm.Equal(OIDDigestAlgorithmSHA512):
-			return x509.ECDSAWithSHA512, nil
-		default:
-			return -1, fmt.Errorf("pkcs7: unsupported digest %q for encryption algorithm %q",
-				digest.Algorithm.String(), digestEncryption.Algorithm.String())
-		}
-	default:
-		return -1, fmt.Errorf("pkcs7: unsupported algorithm %q",
-			digestEncryption.Algorithm.String())
+		return -1, fmt.Errorf("pkcs7: unsupported digest %q for encryption algorithm %q",
+			digest.Algorithm.String(), digestEncryption.Algorithm.String())
 	}
+	return -1, fmt.Errorf("pkcs7: unsupported algorithm %q", digestEncryption.Algorithm.String())
 }
 
 func getCertFromCertsByIssuerAndSerial(certs []*x509.Certificate, ias issuerAndSerial) *x509.Certificate {

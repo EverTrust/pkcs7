@@ -83,6 +83,49 @@ var (
 	OIDEncryptionAlgorithmAES256GCM  = asn1.ObjectIdentifier{2, 16, 840, 1, 101, 3, 4, 1, 46}
 )
 
+func rsaAlgorithmMap() map[string]x509.SignatureAlgorithm {
+	return map[string]x509.SignatureAlgorithm{
+		OIDDigestAlgorithmSHA1.String():   x509.SHA1WithRSA,
+		OIDDigestAlgorithmSHA256.String(): x509.SHA256WithRSA,
+		OIDDigestAlgorithmSHA384.String(): x509.SHA384WithRSA,
+		OIDDigestAlgorithmSHA512.String(): x509.SHA512WithRSA,
+	}
+}
+func ecdsaAlgorithmMap() map[string]x509.SignatureAlgorithm {
+	return map[string]x509.SignatureAlgorithm{
+		OIDDigestAlgorithmSHA1.String():   x509.ECDSAWithSHA1,
+		OIDDigestAlgorithmSHA256.String(): x509.ECDSAWithSHA256,
+		OIDDigestAlgorithmSHA384.String(): x509.ECDSAWithSHA384,
+		OIDDigestAlgorithmSHA512.String(): x509.ECDSAWithSHA512,
+	}
+}
+func dsaAlgorithmMap() map[string]x509.SignatureAlgorithm {
+	return map[string]x509.SignatureAlgorithm{
+		OIDDigestAlgorithmSHA1.String():   x509.DSAWithSHA1,
+		OIDDigestAlgorithmSHA256.String(): x509.DSAWithSHA256,
+	}
+}
+
+var DigestAlgorithmMap = map[string]map[string]x509.SignatureAlgorithm{
+	OIDDigestAlgorithmECDSASHA1.String():   {"": x509.ECDSAWithSHA1},
+	OIDDigestAlgorithmECDSASHA256.String(): {"": x509.ECDSAWithSHA256},
+	OIDDigestAlgorithmECDSASHA384.String(): {"": x509.ECDSAWithSHA384},
+	OIDDigestAlgorithmECDSASHA512.String(): {"": x509.ECDSAWithSHA512},
+
+	OIDEncryptionAlgorithmRSA.String():       rsaAlgorithmMap(),
+	OIDEncryptionAlgorithmRSASHA1.String():   rsaAlgorithmMap(),
+	OIDEncryptionAlgorithmRSASHA256.String(): rsaAlgorithmMap(),
+	OIDEncryptionAlgorithmRSASHA384.String(): rsaAlgorithmMap(),
+	OIDEncryptionAlgorithmRSASHA512.String(): rsaAlgorithmMap(),
+
+	OIDDigestAlgorithmDSA.String():     dsaAlgorithmMap(),
+	OIDDigestAlgorithmDSASHA1.String(): dsaAlgorithmMap(),
+
+	OIDEncryptionAlgorithmECDSAP256.String(): ecdsaAlgorithmMap(),
+	OIDEncryptionAlgorithmECDSAP384.String(): ecdsaAlgorithmMap(),
+	OIDEncryptionAlgorithmECDSAP521.String(): ecdsaAlgorithmMap(),
+}
+
 func getHashForOID(oid asn1.ObjectIdentifier) (crypto.Hash, error) {
 	switch {
 	case oid.Equal(OIDDigestAlgorithmSHA1), oid.Equal(OIDDigestAlgorithmECDSASHA1),
